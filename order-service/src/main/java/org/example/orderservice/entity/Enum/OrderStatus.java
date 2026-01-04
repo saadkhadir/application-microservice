@@ -1,4 +1,8 @@
 package org.example.orderservice.entity.Enum;
 
-public class OrderStatus {
+public enum OrderStatus {
+    PENDING,
+    SHIPPED,
+    DELIVERED,
+    CANCELLED
 }
