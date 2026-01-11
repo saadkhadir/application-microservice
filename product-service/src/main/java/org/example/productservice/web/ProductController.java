@@ -3,6 +3,7 @@ package org.example.productservice.web;
 
 import org.example.productservice.entity.Product;
 import org.example.productservice.service.ProductService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,16 +26,19 @@ public class ProductController {
         return productService.findById(id);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public void save(@RequestBody Product product) {
         productService.save(product);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
     public void update(@PathVariable Long id, @RequestBody Product product) {
         productService.update(id, product);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
     public void deleteById(@PathVariable Long id) {
         productService.deleteById(id);
