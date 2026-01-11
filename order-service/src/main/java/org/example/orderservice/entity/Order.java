@@ -3,16 +3,17 @@ package org.example.orderservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.example.orderservice.entity.Enum.OrderStatus;
-import org.example.orderservice.model.Product;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Data
-@ToString
+@ToString(exclude = {"orderLines"})
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -20,9 +21,29 @@ public class Order {
     private Long id;
     private Date date;
     private OrderStatus status;
-    private int quantity;
-    private Long productId;
-    @Transient
-    private Product product;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<OrderLine> orderLines = new ArrayList<>();
+
+    private String userId;
+
+    public void addOrderLine(OrderLine orderLine) {
+        orderLine.setOrder(this);
+        this.orderLines.add(orderLine);
+    }
+
+
+    public void removeOrderLine(OrderLine orderLine) {
+        this.orderLines.remove(orderLine);
+        orderLine.setOrder(null);
+    }
+
+
+    public Double getTotalAmount() {
+        return this.orderLines.stream()
+                .mapToDouble(OrderLine::getLineTotal)
+                .sum();
+    }
 
 }
