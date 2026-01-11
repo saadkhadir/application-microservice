@@ -1,6 +1,9 @@
 version: "3.9"
 
 services:
+  # ======================
+  # Infrastructure Services
+  # ======================
   keycloak:
     image: keycloak/keycloak:latest
     container_name: keycloak-container
@@ -11,3 +14,101 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    networks:
+      - microservices-network
+
+  # ======================
+  # Config Server
+  # ======================
+  config-server:
+    image: config-service:1
+    container_name: config-server
+    ports:
+      - "9999:9999"
+    environment:
+      CONFIG_REPO_URI : https://github.com/walidmoufadil/microservices-config-repository.git
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ======================
+  # Discovery Service
+  # ======================
+  discovery-service:
+    image: discovery-service:1
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ======================
+  # Business Services
+  # ======================
+  order-service:
+    image: order-service:1
+    container_name: order-service
+    ports:
+      - "8081:8081"
+    environment:
+      CONFIG_SERVICE_URI: configserver:http://localhost:9999
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  product-service:
+    image: product-service:1
+    container_name: product-service
+    ports:
+      - "8082:8082"
+    environment:
+      CONFIG_SERVICE_URI: configserver:http://localhost:9999
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # ======================
+  # Gateway Service
+  # ======================
+  gateway-service:
+    image: gateway-service:1
+    container_name: gateway-service
+    ports:
+      - "8888:8888"
+    environment:
+      KEYCLOAK_ISSUER_URI: http://keycloak-container:8080/realms/microservices-application
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
