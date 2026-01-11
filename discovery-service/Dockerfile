@@ -1,22 +1,19 @@
 # ======================
 # Build stage
 # ======================
-FROM maven:3.9.6-eclipse-temurin-17-slim AS builder
+FROM maven:3.9.9-eclipse-temurin-17-alpine AS builder
 
 WORKDIR /app
 
-# Optimisation du cache Maven
-COPY pom.xml .
-RUN mvn -B dependency:go-offline
-
 # Build
+COPY pom.xml .
 COPY src ./src
 RUN mvn -B clean package -DskipTests
 
 # ======================
 # Runtime stage
 # ======================
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
